@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# This script understands how to take a device name and use the repo tool
+# to sync all the sources required
+
 REPO=./repo
 
 repo_sync() {
@@ -15,18 +18,6 @@ repo_sync() {
 		exit -1
 	fi
 }
-
-case `uname` in
-"Darwin")
-	CORE_COUNT=`system_profiler SPHardwareDataType | grep "Cores:" | sed -e 's/[ a-zA-Z:]*\([0-9]*\)/\1/'`
-	;;
-"Linux")
-	CORE_COUNT=`grep processor /proc/cpuinfo | wc -l`
-	;;
-*)
-	echo Unsupported platform: `uname`
-	exit -1
-esac
 
 GITREPO=${GITREPO:-"git://github.com/mozilla-b2g/b2g-manifest"}
 BRANCH=${BRANCH:-master}
@@ -44,55 +35,20 @@ if [ -n "$2" ]; then
 	cd ..
 fi
 
-echo MAKE_FLAGS=-j$((CORE_COUNT + 2)) > .tmp-config
-echo GECKO_OBJDIR=$PWD/objdir-gecko >> .tmp-config
-echo DEVICE_NAME=$1 >> .tmp-config
+# The x86 emulator and unagi are special cases which use a manifest that
+# has a different name than the device name passed to config.sh because
+# we share the manifest with a slightly different device
 
 case "$1" in
-"galaxy-s2")
-	echo DEVICE=galaxys2 >> .tmp-config &&
-	repo_sync $1 &&
-	;;
-
-"galaxy-nexus")
-	echo DEVICE=maguro >> .tmp-config &&
-	repo_sync $1 &&
-	;;
-
-"optimus-l5")
-	echo DEVICE=m4 >> .tmp-config &&
-	repo_sync $1 &&
-	;;
-
-"nexus-s")
-	echo DEVICE=crespo >> .tmp-config &&
-	repo_sync $1 &&
-	;;
-
-"nexus-s-4g")
-	echo DEVICE=crespo4g >> .tmp-config &&
-	repo_sync $1 &&
-	;;
-
-"otoro"|"unagi")
-	echo DEVICE=$1 >> .tmp-config &&
-	repo_sync $1 &&
-	;;
-
-"pandaboard")
-	echo DEVICE=panda >> .tmp-config &&
-	repo_sync $1 &&
-	;;
-
-"emulator")
-	echo DEVICE=generic >> .tmp-config &&
-	echo LUNCH=full-eng >> .tmp-config &&
+galaxy-s2|galaxy-nexus|optimus-l5|nexus-s|nexus-s-4g|pandaboard|emulator|otoro)
 	repo_sync $1
 	;;
 
+"unagi")
+	repo_sync otoro
+	;;
+
 "emulator-x86")
-	echo DEVICE=generic_x86 >> .tmp-config &&
-	echo LUNCH=full_x86-eng >> .tmp-config &&
 	repo_sync emulator
 	;;
 
@@ -114,10 +70,11 @@ case "$1" in
 esac
 
 if [ $? -ne 0 ]; then
-	echo Configuration failed
+	echo Source configuration failed
 	exit -1
 fi
 
-mv .tmp-config .config
-
-echo Run \|./build.sh\| to start building
+# We call this script directly to avoid breaking the established
+# interface
+echo Finished syncing sources, going to configure the tree for building
+./config-device.sh $1
