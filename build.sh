@@ -1,5 +1,4 @@
 #!/bin/bash
-OUT_DIR=out # Default value
 
 # We want to figure out if we need to re-run the firmware
 # extraction routine.  The first time we run build.sh, we
@@ -9,7 +8,7 @@ OUT_DIR=out # Default value
 # the firmware extraction
 function configure_device() {
     echo Configuring firmware blobs for \"$DEVICE\"
-    hash_file="$OUT_DIR/firmware.hash"
+    hash_file="$OUT/firmware.hash"
 
     # Figure out which pieces of information are important
     case $DEVICE in
