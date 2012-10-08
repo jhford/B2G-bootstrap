@@ -60,6 +60,7 @@ function configure_device() {
         fi
     else
         echo "$DEVICE does not require a firmware blob script"
+        rm -f $hash_file
     fi
 
     return $?
